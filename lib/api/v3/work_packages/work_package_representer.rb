@@ -35,7 +35,7 @@ module API
         include API::Decorators::LinkedResource
         include API::Caching::CachedRepresenter
 
-        cached_representer key_parts: %i(type project status priority category author responsible assigned_to),
+        cached_representer key_parts: %i(type project),
                            disabled: false
 
         class << self
@@ -624,28 +624,23 @@ module API
         self.to_eager_load = [{ children: { project: :enabled_modules } },
                               { parent: { project: :enabled_modules } },
                               { project: %i(enabled_modules work_package_custom_fields) },
-                              :status,
-                              :priority,
                               { type: :custom_fields },
-                              :fixed_version,
                               { custom_values: :custom_field },
-                              :author,
-                              :assigned_to,
-                              :responsible,
-                              :watcher_users,
-                              :category,
-                              :attachments]
+                              :watcher_users]
 
         # The dynamic class generation introduced because of the custom fields interferes with
         # the class naming as well as prevents calls to super
         def json_cache_key
-          self.class.superclass.name.to_s.split('::') + [
-            'json',
-            I18n.locale,
-            json_key_model_parts,
-            Setting.work_package_done_ratio,
-            Setting.feeds_enabled?
-          ]
+          ['API',
+           'V3',
+           'WorkPackages',
+           'WorkPackageRepresenter',
+           'json',
+           I18n.locale,
+           json_key_model_parts,
+           represented.cache_checksum,
+           Setting.work_package_done_ratio,
+           Setting.feeds_enabled?]
         end
 
         def view_time_entries_allowed?
